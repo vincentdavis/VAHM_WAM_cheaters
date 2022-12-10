@@ -2,4 +2,5 @@ pandas
 numpy
 jupyter
 plotly
+fitdecode
 # git+https://github.com/vincentdavis/fit2gpx

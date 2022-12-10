@@ -6,7 +6,7 @@ import shutil
 from datetime import datetime, timedelta
 from typing import Dict, Union, Optional, Tuple
 import pandas as pd
-import gpxpy.gpx
+# import gpxpy.gpx
 import fitdecode
 
 
