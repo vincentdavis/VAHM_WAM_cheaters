@@ -1,0 +1,5 @@
+pandas
+numpy
+jupyter
+plotly
+# git+https://github.com/vincentdavis/fit2gpx
