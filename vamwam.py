@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
 import os
+from datetime import datetime, timedelta
 from typing import Dict, Union, Optional, Tuple
+
+import fitdecode
 import pandas as pd
 import plotly.express as px
-import fitdecode
+
 
 def dataprep(afile):
     conv = Converter()
@@ -13,7 +15,8 @@ def dataprep(afile):
     df['vamh'] = df['vam'] / df['heart_rate']
     df['interval_time'] = df['timestamp'].diff().dt.total_seconds()
     df['total_time'] = df['timestamp'].diff().dt.total_seconds().cumsum()
-    df['interval_distance'] = df['speed'] * df['interval_time']
+    # df['interval_distance'] = df['speed'] * df['interval_time']
+    df['interval_distance'] = df['distance'].diff()
     df['slope'] = df['altitude'].diff() / df['interval_distance']
 
     intervals = range(60, 1200, 60)
@@ -35,7 +38,7 @@ def vamh_distance(df):
     fig.show()
 
 
-def plot_vam(df):
+def vam_curves(df):
     intervals = range(60, 1200, 60)
     slopes = [f"slope_{s}-{s + 1}" for s in range(3, 10)]
     vam_curve = pd.DataFrame(columns=['interval'] + slopes)
@@ -54,9 +57,47 @@ def plot_vam(df):
                 vamh_row.append(0)
         vam_curve.loc[len(vam_curve.index)] = vam_row
         vamh_curve.loc[len(vamh_curve.index)] = vamh_row
+    return vam_curve, vamh_curve
 
-    fig = px.line(vam_curve, x="interval", y=slopes, title='Seconds VS VAM',
+
+def plot_vam(df, show=True, color=px.colors.sequential.Blues):
+    vam_curve, vamh_curve = vam_curves(df)
+    slopes = [f"slope_{s}-{s + 1}" for s in range(3, 10)]
+    vp = px.line(vam_curve, x="interval", y=slopes, title='Seconds VS VAM',
+                  color_discrete_sequence=color)
+    vp.update_xaxes(title_text='Seconds')
+    vp.update_yaxes(title_text='VAM/hr')
+    vp.update_layout(
+        width=1000,
+        height=800)
+    if show:
+        vp.show()
+
+    vhp = px.line(vamh_curve, x="interval", y=slopes, title='Seconds VS VAM/hr',
+                  color_discrete_sequence=color)
+    vhp.update_xaxes(title_text='Seconds')
+    vhp.update_yaxes(title_text='VAM/hr')
+    vhp.update_layout(
+        width=1000,
+        height=800)
+    if show:
+        vhp.show()
+    if not show:
+        return vp, vhp
+
+def vam_compare(df1, df2):
+    vam_curve1, vamh_curve1 = vam_curves(df1)
+    vam_curve2, vamh_curve2 = vam_curves(df2)
+    slopes = [f"slope_{s}-{s + 1}" for s in range(3, 10)]
+    fig = px.line(vam_curve1, x="interval", y=slopes, title='Seconds VS VAM',
                   color_discrete_sequence=px.colors.sequential.Blues)
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[0]], name=slopes[0])
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[1]], name=slopes[1])
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[2]], name=slopes[2])
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[3]], name=slopes[3])
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[4]], name=slopes[4])
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[5]], name=slopes[5])
+    fig.add_scatter(x=vam_curve2['interval'], y=vam_curve2[slopes[6]], name=slopes[6])
     fig.update_xaxes(title_text='Seconds')
     fig.update_yaxes(title_text='VAM/hr')
     fig.update_layout(
@@ -64,19 +105,14 @@ def plot_vam(df):
         height=800)
     fig.show()
 
-    fig = px.line(vamh_curve, x="interval", y=slopes, title='Seconds VS VAM/hr',
+    fig = px.line(vamh_curve1, x="interval", y=slopes, title='Seconds VS VAM/hr',
                   color_discrete_sequence=px.colors.sequential.Blues)
-    fig.update_xaxes(title_text='Seconds')
-    fig.update_yaxes(title_text='VAM/hr')
-    fig.update_layout(
-        width=1000,
-        height=800)
-    fig.show()
+    fig.add_scatter(x=vamh_curve2['interval'], y=vamh_curve2[slopes[0]], name=slopes[0])
+    fig.add_scatter(x=vamh_curve2['interval'], y=vamh_curve2[slopes[1]], name=slopes[1])
 
 
 class Converter:
-    """Main converter that holds the FIT > pd.DataFrame and pd.DataFrame > GPX methods"""
-
+    """Main converter that holds the FIT > pd.DataFrame and pd.DataFrame"""
     def __init__(self, status_msg: bool = False):
         """Main constructor for StravaConverter
         Parameters:
@@ -149,7 +185,6 @@ class Converter:
         for field in self._colnames_points[3:]:
             if frame.has_field(field):
                 data[field] = frame.get_value(field)
-
         return data
 
     def fit_to_dataframes(self, fname: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
