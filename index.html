@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <py-env>
+    - paths:
+      - loadfiles.py
+    </py-env>
+
+    <title>VAM-WAM Cheaters</title>
+</head>
+<body>
+    <h1>VAM-WAM Cheaters</h1>
+    <p>An experimental tool to find zwift cheaters.</p>
+    <p>This is a test to host on GitHub</p>
+
+
+<py-script>
+        from loadfiles import exp1
+        print(exp1())
+</py-script>
+
+
+<label for="myfile">Select a file:</label>
+<input type="file" id="myfile" name="myfile">
+
+</body>
+</html>

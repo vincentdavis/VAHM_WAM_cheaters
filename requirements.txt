@@ -3,4 +3,6 @@ numpy
 jupyter
 plotly
 fitdecode
+scikit-learn
+statsmodels
 # git+https://github.com/vincentdavis/fit2gpx

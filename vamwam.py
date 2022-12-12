@@ -15,6 +15,10 @@ def dataprep(afile):
     df['vamh'] = df['vam'] / df['heart_rate']
     df['interval_time'] = df['timestamp'].diff().dt.total_seconds()
     df['total_time'] = df['timestamp'].diff().dt.total_seconds().cumsum()
+    df['speed'] = df['distance'].diff() / df['timestamp'].diff().dt.total_seconds()
+    df['speedsqrd'] = df['speed'] ** 2
+    df['acceleration'] = df['speed'].diff()/df['timestamp'].diff().dt.total_seconds()
+    df['delta_altitude'] = 9.8*df['altitude'].diff()/df['timestamp'].diff().dt.total_seconds()
     # df['interval_distance'] = df['speed'] * df['interval_time']
     df['interval_distance'] = df['distance'].diff()
     df['slope'] = df['altitude'].diff() / df['interval_distance']
