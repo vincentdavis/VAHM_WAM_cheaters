@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
-from typing import Dict, Union, Optional, Tuple
+from typing import Dict, Union, Optional
+import os
 
 import fitdecode
 import pandas as pd
 
 
-def load_fit(fit_file):
+def load_fit(fit_file: str) -> pd.DataFrame:
     """Load a fit file into a pandas dataframe"""
     conv = Converter()
     print(f"Loading: {fit_file}")
@@ -90,7 +91,7 @@ class Converter:
                 data[field] = frame.get_value(field)
         return data
 
-    def fit_to_dataframes(self, fname: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def fit_to_dataframes(self, fname: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Takes the path to a FIT file and returns two Pandas DataFrames for lap data and point data
         Parameters:
             fname (str): string representing file path of the FIT file
