@@ -5,4 +5,5 @@ plotly
 fitdecode
 scikit-learn
 statsmodels
+# requests_html
 # git+https://github.com/vincentdavis/fit2gpx
