@@ -1,6 +1,6 @@
 # Fair E-Racing Alliance. FERA
-
-Experiments in using VAM, VAM/hr to catch cheaters on Zwift.
+![FERA](images/fera.png?raw=true "FERA logo")
+### Experiments in using VAM, VAM/hr to catch cheaters on Zwift.
 
 Currently, we have a public Google Colab notebook if you want to try this out quickly.
 [LINK](https://colab.research.google.com/drive/1MKAWzPKxVzEcdD_gd6RdBa9zGB-2PR6C)
