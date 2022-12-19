@@ -3,8 +3,7 @@
 ### Experiments in using VAM, VAM/hr to catch cheaters on Zwift.
 
 Currently, You can launch notebooks in MyBinder. we have a public Google Colab notebook if you want to try this out quickly.
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/vincentdavis/VAM_WAM_cheaters/main?urlpath=https%3A%2F%2Fgithub.com%2Fvincentdavis%2FVAM_WAM_cheaters%2Fblob%2Fmain%2FExample%2520VAMhr%2520Method.ipynb)
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/vincentdavis/VAM_WAM_cheaters/?labpath=Example%20VAMhr%20Method.ipynb)
 Or use google colab, for example: Warning, this notebook is not kept up to date.
 [LINK](https://colab.research.google.com/drive/1MKAWzPKxVzEcdD_gd6RdBa9zGB-2PR6C)
 
