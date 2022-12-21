@@ -1,4 +1,5 @@
-# Fair E-Racing Alliance. FERA
+# Fair E-Racing Alliance (FERA)
+
 ![FERA](images/fera.png?raw=true "FERA logo")
 ### Experiments in using VAM, VAM/hr to catch cheaters on Zwift.
 
