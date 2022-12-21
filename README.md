@@ -1,5 +1,6 @@
-# Fair E-Racing Alliance. FERA
-!(images/fera.png?raw=true "FERA logo")
+# Fair E-Racing Alliance (FERA)
+
+![FERA](images/fera.png?raw=true "FERA logo")
 ### Experiments in using VAM, VAM/hr to catch cheaters on Zwift.
 
 Currently, You can launch notebooks in MyBinder.org by clicking on the Binder badge below. This will launch a Jupyter notebook server in the cloud, and you can run the notebooks in your browser. You can also download the notebooks and run them locally.
