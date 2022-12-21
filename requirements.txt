@@ -6,5 +6,6 @@ fitdecode
 scikit-learn
 statsmodels
 openpyxl
+panel
 # requests_html
 # git+https://github.com/vincentdavis/fit2gpx
