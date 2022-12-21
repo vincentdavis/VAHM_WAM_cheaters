@@ -54,7 +54,7 @@
               d = fit2dicts(fileInput.value, from_file=False)[2]
               # print(d[2])
               textarea.value = str(d[2])
-              xlsx = fit2excel(fit_file = fileInput.value, excel_file=download.filename)
+              xlsx = fit2excel(fit_file = fileInput.value, excel_file=download.filename, to_stream=True)
 
           pn.Row(fileInput).servable(target='simple_app')
           pn.Row(textarea).servable(target='textarea')

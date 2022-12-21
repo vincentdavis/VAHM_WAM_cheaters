@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from typing import Dict, Union, Optional
+from io import BytesIO
 
 import fitdecode
 import pandas as pd
@@ -91,10 +92,14 @@ def fit2df(fit_file: str) -> tuple[pd.DataFrame, ...]:
     return FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df
 
 
-def fit2excel(fit_file: str|bytes, excel_file: str, remove_unknown=True) -> None:
+def fit2excel(fit_file: str|bytes, excel_file: str, remove_unknown=True, to_stream=False) -> None:
     """Load a fit file into a pandas dataframe"""
     FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df = fit2df(fit_file)
+    # print('Try to open a file')
+    if to_stream:
+        excel_file = BytesIO()
     with pd.ExcelWriter(excel_file) as writer:
+        # print('we can open a file')
         FitHeaders_df.to_excel(writer, sheet_name='FitHeaders')
         FitDefinitionMessages_df.to_excel(writer, sheet_name='FitDefinitionMessages')
         if remove_unknown:
