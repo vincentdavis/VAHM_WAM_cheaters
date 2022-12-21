@@ -46,33 +46,30 @@ def frame2dict(frame: fitdecode.records.FitDataMessage) -> dict:
     return frame_dict
 
 
-def fit2dicts(fit_file: str) -> tuple[
+def fit2dicts(fit_file: str | bytes, from_file=True) -> tuple[
     list[dict, ...], list[dict, ...], list[dict, ...], list[dict, ...], list[dict, ...]]:
     """Load a fit file"""
-    input_extension = os.path.splitext(fit_file)[1]
-    if input_extension.lower() != '.fit':
-        raise fitdecode.exceptions.FitHeaderError("Input file must be a .FIT file.")
     FitHeaders = []
     FitDefinitionMessages = []
     FitDataMessages = []
     FitCRCs = []
     fitother = []
-    with open(fit_file, 'rb') as fitfile:
-        fit = fitdecode.FitReader(fitfile)
-        for i, frame in enumerate(fit):
-            match frame:
-                case fitdecode.records.FitHeader():
-                    FitHeaders.append(slots2dict(frame))
-                case fitdecode.records.FitDefinitionMessage():
-                    FitDefinitionMessages.append(FieldDefinition2dict(frame))
-                    # FitDefinitionMessages.append({i: slots2dict(frame)})
-                case fitdecode.records.FitDataMessage():
-                    FitDataMessages.append(frame2dict(frame))
-                    # FitDataMessages.append({i: slots2dict(frame)})
-                case fitdecode.records.FitCRC():
-                    FitCRCs.append(slots2dict(frame))
-                case _:
-                    fitother.append(slots2dict(frame))
+    # def process(fit):
+    fit = fitdecode.FitReader(fit_file)
+    for i, frame in enumerate(fit):
+        match frame:
+            case fitdecode.records.FitHeader():
+                FitHeaders.append(slots2dict(frame))
+            case fitdecode.records.FitDefinitionMessage():
+                FitDefinitionMessages.append(FieldDefinition2dict(frame))
+                # FitDefinitionMessages.append({i: slots2dict(frame)})
+            case fitdecode.records.FitDataMessage():
+                FitDataMessages.append(frame2dict(frame))
+                # FitDataMessages.append({i: slots2dict(frame)})
+            case fitdecode.records.FitCRC():
+                FitCRCs.append(slots2dict(frame))
+            case _:
+                fitother.append(slots2dict(frame))
     return FitHeaders, FitDefinitionMessages, FitDataMessages, FitCRCs, fitother
 
 
@@ -94,7 +91,7 @@ def fit2df(fit_file: str) -> tuple[pd.DataFrame, ...]:
     return FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df
 
 
-def fit2excel(fit_file: str, excel_file: str, remove_unknown=True) -> None:
+def fit2excel(fit_file: str|bytes, excel_file: str, remove_unknown=True) -> None:
     """Load a fit file into a pandas dataframe"""
     FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df = fit2df(fit_file)
     with pd.ExcelWriter(excel_file) as writer:

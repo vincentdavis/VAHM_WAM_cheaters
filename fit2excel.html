@@ -1,0 +1,66 @@
+
+<html>
+  <head>
+    <title>Convert FIT file to xlsx</title>
+    <meta charset="iso-8859-1">
+    <link rel="icon" type="image/x-icon" href="./favicon.png">
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.3.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.4.3.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.4.3.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@holoviz/panel@0.14.1/dist/panel.min.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <link rel="stylesheet" href="./assets/css/examples.css" />
+  </head>
+  <body>
+   <nav class="navbar" style="background-color: #000000;">
+      <div class="app-header">
+
+        <a class="title" href="" style="color: #f0ab3c;">Convert FIT file to XLSX</a>
+      </div>
+    </nav>
+    <section class="pyscript">
+      <div id="simple_app"></div>
+      <div id="upload_button"></div>
+      <div id="textarea"></div>
+      <div id="download"></div>
+
+        <py-config type="json">
+          {"packages": ["panel", "fitdecode", "pandas", "openpyxl"],
+          "fetch": [{"files":["./loadfiles.py"]}]}
+
+        </py-config>
+
+        <py-script>
+          import io
+          import panel as pn
+          from loadfiles import fit2excel, fit2dicts
+
+          def download_file():
+            # return io.BytesIO(textarea.value.encode('utf-8'))
+            # return io.BytesIO(xlsx.encode('utf-8'))
+            return xlsx
+
+          fileInput = pn.widgets.FileInput(accept='.fit')
+          uploadButton = pn.widgets.Button(name='Upload', button_type = 'primary')
+          textarea = pn.widgets.TextAreaInput(name='FIT file device details', width=1000, height=300)
+          download = pn.widgets.FileDownload(filename="fit2excel.txt", callback=download_file, button_type="primary")
+          xlsx = None
+
+          def process_file(event):
+            if fileInput.value is not None:
+              # print(fileInput.value)
+              # reader = FitReader(fileInput.value)
+              d = fit2dicts(fileInput.value, from_file=False)[2]
+              # print(d[2])
+              textarea.value = str(d[2])
+              xlsx = fit2excel(fit_file = fileInput.value, excel_file=download.filename)
+
+          pn.Row(fileInput).servable(target='simple_app')
+          pn.Row(textarea).servable(target='textarea')
+          pn.Row(uploadButton, pn.bind(process_file, uploadButton)).servable(target='upload_button')
+          pn.Row(download).servable(target='download')
+        </py-script>
+    </section>
+  </body>
+</html>
