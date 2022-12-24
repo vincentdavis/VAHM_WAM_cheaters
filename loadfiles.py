@@ -1,7 +1,10 @@
 import os
+import warnings
 from datetime import datetime, timedelta
-from typing import Dict, Union, Optional
 from io import BytesIO
+from typing import Dict, Union, Optional
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import fitdecode
 import pandas as pd
@@ -19,14 +22,16 @@ def load_fit(fit_file: str) -> pd.DataFrame:
 
 def slots2dict(classobj: object) -> dict:
     "Convert a class object with slots to a dict"
-    {s: getattr(classobj, s, None) for s in classobj.__slots__}
-    return {s: getattr(classobj, s, None) for s in classobj.__slots__}
+    # {s: getattr(classobj, s, None) for s in classobj.__slots__}
+    return {s: getattr(classobj, s, None) for s in classobj.__slots__ if 'unknown_' not in s}
 
 
 def FieldDefinition2dict(frame: fitdecode.records.FitDefinitionMessage) -> dict:
     "Convert a FieldDefinition to dict"
     frame_dict = {}
     for d in frame.field_defs:
+        if 'unknown_' in d.name.lower():
+            continue
         frame_dict['name'] = d.name
         frame_dict['is_dev'] = d.is_dev
         frame_dict['type']: d.type.name
@@ -40,6 +45,8 @@ def frame2dict(frame: fitdecode.records.FitDataMessage) -> dict:
     frame_dict = {}
     for field in frame.fields:
         # print(f"Frame Field Name: {field.value}")
+        if 'unknown_' in field.name.lower():
+            continue
         try:
             frame_dict[field.name] = frame.get_value(field.name)
         except KeyError:
@@ -47,52 +54,69 @@ def frame2dict(frame: fitdecode.records.FitDataMessage) -> dict:
     return frame_dict
 
 
-def fit2dicts(fit_file: str | bytes, from_file=True) -> tuple[
-    list[dict, ...], list[dict, ...], list[dict, ...], list[dict, ...], list[dict, ...]]:
+def fit2dict(fit_file: str | bytes, from_file=True) -> dict[
+    dict, list[dict, ...], list[dict, ...], list[dict, ...], list[dict, ...], dict, list[dict, ...],
+    dict, list[dict, ...]]:
     """Load a fit file"""
-    FitHeaders = []
-    FitDefinitionMessages = []
-    FitDataMessages = []
-    FitCRCs = []
-    fitother = []
+    header = None
+    definitions = []
+    other_records = []
+    events = []
+    sessions = []
+    activity = None
+    records = []
+    crcs = None
+    other = []
     # def process(fit):
     fit = fitdecode.FitReader(fit_file)
+    event = dict()
     for i, frame in enumerate(fit):
         match frame:
             case fitdecode.records.FitHeader():
-                FitHeaders.append(slots2dict(frame))
+                header = (slots2dict(frame))
             case fitdecode.records.FitDefinitionMessage():
-                FitDefinitionMessages.append(FieldDefinition2dict(frame))
-                # FitDefinitionMessages.append({i: slots2dict(frame)})
+                definitions.append(FieldDefinition2dict(frame))
             case fitdecode.records.FitDataMessage():
-                FitDataMessages.append(frame2dict(frame))
-                # FitDataMessages.append({i: slots2dict(frame)})
+                if 'unknown_' not in frame.name.lower():
+                    match frame.name:
+                        case 'event':
+                            event = frame2dict(frame)
+                            events.append(event)
+                        case 'session':
+                            sessions.append(frame2dict(frame))
+                        case 'activity':
+                            activity = frame2dict(frame)
+                        case 'record':
+                            rec = frame2dict(frame)
+                            rec.update(event)
+                            records.append(rec)
+                        case _:
+                            other_records.append(frame2dict(frame))
             case fitdecode.records.FitCRC():
-                FitCRCs.append(slots2dict(frame))
+                crcs = slots2dict(frame)
             case _:
-                fitother.append(slots2dict(frame))
-    return FitHeaders, FitDefinitionMessages, FitDataMessages, FitCRCs, fitother
+                other.append(slots2dict(frame))
+    columns = set()
+    for k in records:
+        columns.update(k.keys())
+    fit_dict = {'header': header, 'definitions': definitions, 'events': events, 'sessions': sessions,
+                'activity': activity,
+                'other_records': other_records, 'records': records, 'crcs': crcs, 'other': other, 'columns': columns}
+    return fit_dict
 
 
-def fit2df(fit_file: str) -> tuple[pd.DataFrame, ...]:
+def fit2df(fit_file: str) -> pd.DataFrame:
     """Load a fit file into a pandas dataframe"""
-    FitHeaders, FitDefinitionMessages, FitDataMessages, FitCRCs, fitother = fit2dicts(fit_file)
-    FitHeaders_df = pd.DataFrame(FitHeaders)
-    FitDefinitionMessages_df = pd.DataFrame(FitDefinitionMessages)
-    FitDataMessages_df = pd.DataFrame(FitDataMessages)
-    FitDataMessages_df.dropna(how='all', axis='columns', inplace=True)
-    Data = FitDataMessages_df[(FitDataMessages_df.event_type == 'marker') | (FitDataMessages_df.distance.notnull())]
-    Data.dropna(how='all', axis='columns', inplace=True)
-    file_data = FitDataMessages_df[
-        (FitDataMessages_df['distance'].isnull()) & (FitDataMessages_df['event_type'] != 'marker')]
-    file_data.dropna(how='all', axis='columns', inplace=True)
-    file_data.dropna(how='all', axis='rows', inplace=True)
-    FitCRCs_df = pd.DataFrame(FitCRCs)
-    fitother_df = pd.DataFrame(fitother)
-    return FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df
+    fit_dict = fit2dict(fit_file)
+    df = pd.DataFrame(columns=list(fit_dict['columns']))
+    for row in fit_dict['records']:
+        df = df.append(row, ignore_index=True)
+    df.dropna(how='all', axis='columns', inplace=True)
+    df.dropna(how='all', axis='rows', inplace=True)
+    return df
 
 
-def fit2excel(fit_file: str|bytes, excel_file: str, remove_unknown=True, to_stream=False) -> None:
+def fit2excel(fit_file: str | bytes, excel_file: str, remove_unknown=True, to_stream=False) -> BytesIO:
     """Load a fit file into a pandas dataframe"""
     FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df = fit2df(fit_file)
     # print('Try to open a file')
@@ -120,6 +144,9 @@ def fit2excel(fit_file: str|bytes, excel_file: str, remove_unknown=True, to_stre
 
         FitCRCs_df.to_excel(writer, sheet_name='FitCRCs')
         fitother_df.to_excel(writer, sheet_name='fitother')
+        writer.save()
+        excel_file.seek(0)
+        return excel_file
 
 
 class Converter:
@@ -236,4 +263,4 @@ class Converter:
         df_laps = pd.DataFrame(data_laps, columns=self._colnames_laps)
         df_laps.set_index('number', inplace=True)
         df_points = pd.DataFrame(data_points, columns=self._colnames_points)
-        return df_laps, df_points
+        return df_laps,
