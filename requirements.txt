@@ -1,5 +1,6 @@
 pandas
 numpy
+scipy
 jupyter
 plotly
 fitdecode
@@ -7,5 +8,10 @@ scikit-learn
 statsmodels
 openpyxl
 panel
+lmfit
+
+# garmin-fit-sdk
+# matplotlib
+
 # requests_html
 # git+https://github.com/vincentdavis/fit2gpx

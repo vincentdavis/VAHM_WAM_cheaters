@@ -1,8 +1,6 @@
-import os
 import warnings
-from datetime import datetime, timedelta
-from io import BytesIO
-from typing import Dict, Union, Optional
+from datetime import datetime
+from typing import Any
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -10,14 +8,6 @@ import fitdecode
 import pandas as pd
 
 pd.set_option('mode.chained_assignment', None)
-
-
-def load_fit(fit_file: str) -> pd.DataFrame:
-    """Load a fit file into a pandas dataframe"""
-    conv = Converter()
-    print(f"Loading: {fit_file}")
-    df_lap, df = conv.fit_to_dataframes(fname=fit_file)
-    return df
 
 
 def slots2dict(classobj: object) -> dict:
@@ -54,9 +44,7 @@ def frame2dict(frame: fitdecode.records.FitDataMessage) -> dict:
     return frame_dict
 
 
-def fit2dict(fit_file: str | bytes, from_file=True) -> dict[
-    dict, list[dict, ...], list[dict, ...], list[dict, ...], list[dict, ...], dict, list[dict, ...],
-    dict, list[dict, ...]]:
+def fit2dict(fit_file: str | bytes, from_file=True) -> dict[str, None | dict | list[dict] | set[Any]]:
     """Load a fit file"""
     header = None
     definitions = []
@@ -70,6 +58,7 @@ def fit2dict(fit_file: str | bytes, from_file=True) -> dict[
     # def process(fit):
     fit = fitdecode.FitReader(fit_file)
     event = dict()
+    columns = set()
     for i, frame in enumerate(fit):
         match frame:
             case fitdecode.records.FitHeader():
@@ -89,6 +78,7 @@ def fit2dict(fit_file: str | bytes, from_file=True) -> dict[
                         case 'record':
                             rec = frame2dict(frame)
                             rec.update(event)
+                            columns.update(rec.keys())
                             records.append(rec)
                         case _:
                             other_records.append(frame2dict(frame))
@@ -96,9 +86,6 @@ def fit2dict(fit_file: str | bytes, from_file=True) -> dict[
                 crcs = slots2dict(frame)
             case _:
                 other.append(slots2dict(frame))
-    columns = set()
-    for k in records:
-        columns.update(k.keys())
     fit_dict = {'header': header, 'definitions': definitions, 'events': events, 'sessions': sessions,
                 'activity': activity,
                 'other_records': other_records, 'records': records, 'crcs': crcs, 'other': other, 'columns': columns}
@@ -108,159 +95,34 @@ def fit2dict(fit_file: str | bytes, from_file=True) -> dict[
 def fit2df(fit_file: str) -> pd.DataFrame:
     """Load a fit file into a pandas dataframe"""
     fit_dict = fit2dict(fit_file)
-    df = pd.DataFrame(columns=list(fit_dict['columns']))
-    for row in fit_dict['records']:
-        df = df.append(row, ignore_index=True)
-    df.dropna(how='all', axis='columns', inplace=True)
+    # df = pd.DataFrame(columns=list(fit_dict['columns']))
+    df = pd.DataFrame.from_dict(fit_dict['records'])
+    df.set_index('timestamp', inplace=True)
+    df.dropna(how='all', axis='columns', in_place=True)
     df.dropna(how='all', axis='rows', inplace=True)
     return df
 
 
-def fit2excel(fit_file: str | bytes, excel_file: str, remove_unknown=True, to_stream=False) -> BytesIO:
-    """Load a fit file into a pandas dataframe"""
-    FitHeaders_df, FitDefinitionMessages_df, file_data, Data, FitCRCs_df, fitother_df = fit2df(fit_file)
-    # print('Try to open a file')
-    if to_stream:
-        excel_file = BytesIO()
-    with pd.ExcelWriter(excel_file) as writer:
-        # print('we can open a file')
-        FitHeaders_df.to_excel(writer, sheet_name='FitHeaders')
-        FitDefinitionMessages_df.to_excel(writer, sheet_name='FitDefinitionMessages')
-        if remove_unknown:
-            file_data = file_data[[c for c in file_data if 'unknown' not in c]]
-            Data = Data[[c for c in Data if 'unknown' not in c]]
-
-        # deal with timezone columns in FitDataMessages_df
-        for d in [file_data, Data]:
-            date_columns = d.select_dtypes(include=['datetime64[ns, UTC]']).columns
-            for c in date_columns:
-                try:
-                    d[c] = d[c].apply(
-                        lambda a: datetime.strftime(a, "%Y-%m-%d %H:%M:%S") if not pd.isnull(a) else '')
-                except:
-                    raise
-        file_data.to_excel(writer, sheet_name='file_data')
-        Data.to_excel(writer, sheet_name='Data')
-
-        FitCRCs_df.to_excel(writer, sheet_name='FitCRCs')
-        fitother_df.to_excel(writer, sheet_name='fitother')
-        writer.save()
-        excel_file.seek(0)
-        return excel_file
+def fit2csv(fitfile: str, outfile):
+    df = fit2df(fitfile)
+    # deal with timezone columns in FitDataMessages_df
+    date_columns = df.select_dtypes(include=['datetime64[ns, UTC]']).columns
+    for c in date_columns:
+        try:
+            df[c] = df[c].apply(
+                lambda a: datetime.strftime(a, "%Y-%m-%d %H:%M:%S") if not pd.isnull(a) else '')
+        except:
+            raise
+    df.to_csv(outfile)
 
 
-class Converter:
-    """Main converter that holds the FIT > pd.DataFrame and pd.DataFrame"""
-
-    def __init__(self, status_msg: bool = False):
-        """Main constructor for StravaConverter
-        Parameters:
-            status_msg (bool): Option to have the Converter print to console with status messages,
-            such as number of files converted.
-        """
-        self.status_msg = status_msg
-        # The names of the columns we will use in our points and laps DataFrame
-        # (use the same name as the field names in FIT file to facilate parsing)
-        self._colnames_points = [
-            'latitude',
-            'longitude',
-            'lap',
-            'altitude',
-            'distance',
-            'timestamp',
-            'heart_rate',
-            'cadence',
-            'speed',
-            'power'
-        ]
-
-        self._colnames_laps = [
-            'number',
-            'start_time',
-            'total_distance',
-            'total_elapsed_time',
-            'max_speed',
-            'max_heart_rate',
-            'avg_heart_rate'
-        ]
-
-        # Note: get_fit_laps(), get_fit_points(), get_dataframes() are shamelessly copied (and adapted) from:
-        # https://github.com/bunburya/fitness_tracker_data_parsing/blob/main/parse_fit.py
-
-    def _get_fit_laps(self, frame: fitdecode.records.FitDataMessage) \
-            -> Dict[str, Union[float, datetime, timedelta, int]]:
-        """Extract some data from a FIT frame representing a lap and return it as a dict.
-        """
-        # Step 0: Initialise data output
-        data: Dict[str, Union[float, datetime, timedelta, int]] = {}
-
-        # Step 1: Extract all other fields
-        #  (excluding 'number' (lap number) because we don't get that from the data but rather count it ourselves)
-        for field in self._colnames_laps[1:]:
-            if frame.has_field(field):
-                data[field] = frame.get_value(field)
-
-        return data
-
-    def _get_fit_points(self, frame: fitdecode.records.FitDataMessage) \
-            -> Optional[Dict[str, Union[float, int, str, datetime]]]:
-        """Extract some data from an FIT frame representing a track point and return it as a dict.
-        """
-        # Step 0: Initialise data output
-        data: Dict[str, Union[float, int, str, datetime]] = {}
-
-        # Step 1: Obtain frame lat and long and convert it from integer to degree (if frame has lat and long data)
-        if not (frame.has_field('position_lat') and frame.has_field('position_long')):
-            # Frame does not have any latitude or longitude data. Ignore these frames in order to keep things simple
-            return None
-        elif frame.get_value('position_lat') is None and frame.get_value('position_long') is None:
-            # Frame lat or long is None. Ignore frame
-            return None
-        else:
-            data['latitude'] = frame.get_value('position_lat') / ((2 ** 32) / 360)
-            data['longitude'] = frame.get_value('position_long') / ((2 ** 32) / 360)
-
-        # Step 2: Extract all other fields
-        for field in self._colnames_points[3:]:
-            if frame.has_field(field):
-                data[field] = frame.get_value(field)
-        return data
-
-    def fit_to_dataframes(self, fname: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Takes the path to a FIT file and returns two Pandas DataFrames for lap data and point data
-        Parameters:
-            fname (str): string representing file path of the FIT file
-        Returns:
-            dfs (tuple): df containing data about the laps , df containing data about the individual points.
-        """
-        # Check that this is a .FIT file
-        input_extension = os.path.splitext(fname)[1]
-        if input_extension.lower() != '.fit':
-            raise fitdecode.exceptions.FitHeaderError("Input file must be a .FIT file.")
-
-        data_points = []
-        data_laps = []
-        lap_no = 1
-        with fitdecode.FitReader(fname) as fit_file:
-            for frame in fit_file:
-                if isinstance(frame, fitdecode.records.FitDataMessage):
-                    # Determine if frame is a data point or a lap:
-                    if frame.name == 'record':
-                        single_point_data = self._get_fit_points(frame)
-                        if single_point_data is not None:
-                            single_point_data['lap'] = lap_no  # record lap number
-                            data_points.append(single_point_data)
-
-                    elif frame.name == 'lap':
-                        single_lap_data = self._get_fit_laps(frame)
-                        single_lap_data['number'] = lap_no
-                        data_laps.append(single_lap_data)
-                        lap_no += 1  # increase lap counter
-
-        # Create DataFrames from the data we have collected.
-        # (If any information is missing from a lap or track point, it will show up as a "NaN" in the DataFrame.)
-
-        df_laps = pd.DataFrame(data_laps, columns=self._colnames_laps)
-        df_laps.set_index('number', inplace=True)
-        df_points = pd.DataFrame(data_points, columns=self._colnames_points)
-        return df_laps,
+def fit2excel(fitfile, outfile):
+    df = fit2df(fitfile)
+    date_columns = df.select_dtypes(include=['datetime64[ns, UTC]']).columns
+    for c in date_columns:
+        try:
+            df[c] = df[c].apply(
+                lambda a: datetime.strftime(a, "%Y-%m-%d %H:%M:%S") if not pd.isnull(a) else '')
+        except:
+            raise
+    df.to_excel(outfile)

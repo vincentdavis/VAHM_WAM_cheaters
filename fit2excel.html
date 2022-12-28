@@ -1,4 +1,3 @@
-
 <html>
   <head>
     <title>Convert FIT file to xlsx</title>
@@ -35,17 +34,17 @@
           import io
           import panel as pn
           from loadfiles import fit2excel, fit2dicts
+          xlsx = None
 
           def download_file():
-            # return io.BytesIO(textarea.value.encode('utf-8'))
-            # return io.BytesIO(xlsx.encode('utf-8'))
-            return xlsx
+            if fileInput.value is not None:
+              return fit2excel(fit_file = fileInput.value, excel_file=download.filename, to_stream=True)
 
           fileInput = pn.widgets.FileInput(accept='.fit')
           uploadButton = pn.widgets.Button(name='Upload', button_type = 'primary')
           textarea = pn.widgets.TextAreaInput(name='FIT file device details', width=1000, height=300)
-          download = pn.widgets.FileDownload(filename="fit2excel.txt", callback=download_file, button_type="primary")
-          xlsx = None
+          download = pn.widgets.FileDownload(filename="fit2excel.xlsx", callback=download_file, button_type="primary")
+
 
           def process_file(event):
             if fileInput.value is not None:
@@ -57,8 +56,8 @@
               xlsx = fit2excel(fit_file = fileInput.value, excel_file=download.filename, to_stream=True)
 
           pn.Row(fileInput).servable(target='simple_app')
-          pn.Row(textarea).servable(target='textarea')
-          pn.Row(uploadButton, pn.bind(process_file, uploadButton)).servable(target='upload_button')
+          #pn.Row(textarea).servable(target='textarea')
+          #pn.Row(uploadButton, pn.bind(process_file, uploadButton)).servable(target='upload_button')
           pn.Row(download).servable(target='download')
         </py-script>
     </section>
