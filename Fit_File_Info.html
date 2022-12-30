@@ -49,7 +49,7 @@
           def process_file(event):
             if fileInput.value is not None:
               textarea.value = fitfileinfo(fileInput.value)
-              print('read')
+              # print('reading file')
 
           pn.Row(fileInput).servable(target='Fit_info_app')
           pn.Row(textarea).servable(target='textarea')

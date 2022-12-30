@@ -42,11 +42,11 @@ def fitfileinfo(fit, show_unkown=False):
                             if show_unkown or "unknown_" not in field.name.lower():
                                 fileinfo += f"- {field.name}: {field.value}\n"
 
-        fileinfo += f"### Data Records:\n" \
-                    f"- records: {records}\n" \
-                    f"- events: {events}\n" \
-                    f"- sessions: {sessions}\n" \
-                    f"- activitys: {activitys}\n" \
-                    f"- laps: {lapss}\n"
+    fileinfo += f"### Data Records:\n" \
+                f"- records: {records}\n" \
+                f"- events: {events}\n" \
+                f"- sessions: {sessions}\n" \
+                f"- activitys: {activitys}\n" \
+                f"- laps: {lapss}\n"
         # fileinfo += f
     return fileinfo
