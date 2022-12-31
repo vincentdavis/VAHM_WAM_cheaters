@@ -9,6 +9,7 @@ statsmodels
 openpyxl
 panel
 lmfit
+hvplot
 
 # garmin-fit-sdk
 # matplotlib

@@ -77,7 +77,7 @@ def fit2dict(fit_file: str | bytes, from_file=True) -> dict[str, None | dict | l
                             activity = frame2dict(frame)
                         case 'record':
                             rec = frame2dict(frame)
-                            rec.update(event)
+                            # rec.update(event)
                             columns.update(rec.keys())
                             records.append(rec)
                         case _:
@@ -98,8 +98,8 @@ def fit2df(fit_file: str) -> pd.DataFrame:
     # df = pd.DataFrame(columns=list(fit_dict['columns']))
     df = pd.DataFrame.from_dict(fit_dict['records'])
     df.set_index('timestamp', inplace=True)
-    df.dropna(how='all', axis='columns', in_place=True)
-    df.dropna(how='all', axis='rows', inplace=True)
+    df.dropna(how='all', axis='columns', inplace=True)
+    df.dropna(how='all', axis='index', inplace=True)
     return df
 
 
