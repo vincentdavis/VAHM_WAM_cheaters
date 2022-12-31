@@ -6,6 +6,7 @@ def slots2dict(classobj: object) -> dict:
     {s: getattr(classobj, s, None) for s in classobj.__slots__}
     return {s: getattr(classobj, s, None) for s in classobj.__slots__}
 
+
 def frame2dict(frame: fitdecode.records.FitDataMessage) -> dict:
     "Convert a fonvert frame fields to dict"
     frame_dict = {}
@@ -29,6 +30,7 @@ def fitfileinfo(fit, show_unkown=False):
     records = 0
     record_fields = set()
     events = 0
+    event_types = set()
     sessions = 0
     activitys = 0
     laps = 0
@@ -65,6 +67,8 @@ def fitfileinfo(fit, show_unkown=False):
                     fileinfo += f"\n### lap\n"
                     for k, v in frame2dict(d).items():
                         fileinfo += f"- {k}: {v}\n"
+                if d.name == 'event':
+                    event_types.add(d.get_value('event'))
 
     fileinfo += f"\n### Data Records:\n" \
                 f"- records: {records}\n" \
@@ -75,4 +79,7 @@ def fitfileinfo(fit, show_unkown=False):
     fileinfo += f"\n### Record Fields:\n"
     for field in record_fields:
         fileinfo += f"- {field}\n"
+    fileinfo += f"\n### Event Types:\n"
+    for etype in event_types:
+        fileinfo += f"- {etype}\n"
     return fileinfo
