@@ -47,13 +47,24 @@ def fitfileinfo(fit, show_unkown=False):
                 laps += 1 if d.name == 'lap' else 0
                 if d.name == 'record':
                     record_fields.update(frame2dict(d).keys())
-
                 if d.name.lower() not in ['record', 'event', 'session', 'activity', 'lap']:
                     if show_unkown or "unknown_" not in d.name.lower():
                         fileinfo += f"\n### Data type: {d.name.upper()}\n"
                         for field in d.fields:
                             if show_unkown or "unknown_" not in field.name.lower():
                                 fileinfo += f"- {field.name}: {field.value}\n"
+                if d.name == 'activity':
+                    fileinfo += f"\n### activity\n"
+                    for k, v in frame2dict(d).items():
+                        fileinfo += f"- {k}: {v}\n"
+                if d.name == 'session':
+                    fileinfo += f"\n### session\n"
+                    for k, v in frame2dict(d).items():
+                        fileinfo += f"- {k}: {v}\n"
+                if d.name == 'lap':
+                    fileinfo += f"\n### lap\n"
+                    for k, v in frame2dict(d).items():
+                        fileinfo += f"- {k}: {v}\n"
 
     fileinfo += f"\n### Data Records:\n" \
                 f"- records: {records}\n" \
