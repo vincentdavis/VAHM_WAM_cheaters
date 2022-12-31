@@ -6,6 +6,19 @@ def slots2dict(classobj: object) -> dict:
     {s: getattr(classobj, s, None) for s in classobj.__slots__}
     return {s: getattr(classobj, s, None) for s in classobj.__slots__}
 
+def frame2dict(frame: fitdecode.records.FitDataMessage) -> dict:
+    "Convert a fonvert frame fields to dict"
+    frame_dict = {}
+    for field in frame.fields:
+        # print(f"Frame Field Name: {field.value}")
+        if 'unknown_' in field.name.lower():
+            continue
+        try:
+            frame_dict[field.name] = frame.get_value(field.name)
+        except KeyError:
+            frame_dict[field.name] = None
+    return frame_dict
+
 
 def fitfileinfo(fit, show_unkown=False):
     "Creats a markdown text file object with information about the fit file"
@@ -14,11 +27,11 @@ def fitfileinfo(fit, show_unkown=False):
     else:
         fit = fitdecode.FitReader(fit)
     records = 0
-    record_fields = []
+    record_fields = set()
     events = 0
     sessions = 0
     activitys = 0
-    lapss = 0
+    laps = 0
     fileinfo = "# Fit File details\n\n"
     for d in fit:
         match d:
@@ -31,9 +44,9 @@ def fitfileinfo(fit, show_unkown=False):
                 events += 1 if d.name == 'event' else 0
                 sessions += 1 if d.name == 'session' else 0
                 activitys += 1 if d.name == 'activity' else 0
-                lapss += 1 if d.name == 'lap' else 0
-                # if d.name == 'record':
-                #     record_fields += [f for f in d.fields if f not in record_fields]
+                laps += 1 if d.name == 'lap' else 0
+                if d.name == 'record':
+                    record_fields.update(frame2dict(d).keys())
 
                 if d.name.lower() not in ['record', 'event', 'session', 'activity', 'lap']:
                     if show_unkown or "unknown_" not in d.name.lower():
@@ -47,6 +60,8 @@ def fitfileinfo(fit, show_unkown=False):
                 f"- events: {events}\n" \
                 f"- sessions: {sessions}\n" \
                 f"- activitys: {activitys}\n" \
-                f"- laps: {lapss}\n"
-        # fileinfo += f
+                f"- laps: {laps}\n"
+    fileinfo += f"\n### Record Fields:\n"
+    for field in record_fields:
+        fileinfo += f"- {field}\n"
     return fileinfo
