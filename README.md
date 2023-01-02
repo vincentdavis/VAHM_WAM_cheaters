@@ -10,6 +10,9 @@ Currently, You can launch notebooks in MyBinder.org by clicking on the Binder ba
 Or use google colab, for example: Warning, this notebook is not kept up to date.
 [LINK](https://colab.research.google.com/drive/1MKAWzPKxVzEcdD_gd6RdBa9zGB-2PR6C)
 
+## Simple app to to details about a FIT file
+[FIT FILE INFO](https://vincentdavis.github.io/VAM_WAM_cheaters/Fit_File_Info.html)
+
 
 Feel free to create issues for new features or method requests.
 
